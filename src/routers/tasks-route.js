@@ -1,5 +1,5 @@
 const express = require('express')
-const User = require('../model/task')
+const Task = require('../model/task')
 const router = new express.Router()
 
 // ............TASKS.................
@@ -26,8 +26,8 @@ router.get('/tasks', async (req, res) => {
 })
 
 //Get Task
-router.get('/task/:id', async (req, res) => {
-    const _id = req.params.id
+router.post('/task', async (req, res) => {
+    const _id = req.body.id
     try {
         const task = await Task.findById(_id)
         if(!task){
@@ -40,10 +40,17 @@ router.get('/task/:id', async (req, res) => {
 })
 
 //Update Task
-router.patch('/task/:id', async (req, res) => {
-    const _id = req.params.id
+router.post('/task-update', async (req, res) => {
+    const _id = req.body.id
+    const updates = Object.keys(req.body)
     try {
-        const task = await Task.findByIdAndUpdate(_id, req.body, { new: true, runValidators: true})
+        const task = await Task.findById(req.body._id)
+        console.log(req.body._id)
+
+        updates.forEach((update) => task[update] = req.body[update])
+        await task.save()
+
+        //const task = await Task.findByIdAndUpdate(_id, req.body, { new: true, runValidators: true})
         if(!task){
             return res.status(404).send()
         }
@@ -54,8 +61,8 @@ router.patch('/task/:id', async (req, res) => {
 })
 
 //Delete User
-router.delete('/task/:id', async (req, res) => {
-    const _id = req.params.id
+router.post('/task-delete', async (req, res) => {
+    const _id = req.body.id
     try {
         const task = await Task.findByIdAndDelete(_id)
         if(!task){
