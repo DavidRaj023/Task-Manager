@@ -1,49 +1,69 @@
-const express = require('express')
-const User = require('../model/user')
-const router = new express.Router()
+const express = require('express');
+const User = require('../model/user');
+const router = new express.Router();
+const auth = require('../middleware/auth');
 
 // ..............USER..............
 
-//Create User
+//Sign up
 router.post('/user', async (req, res) =>{
-    const user = new User(req.body)
-    console.log(req.body.email)
+    const user = new User(req.body);
+    console.log(req.body.email);
     try {
-        await user.save()
-        res.status(201).send(user)
+        await user.save();
+        const tocken = await user.generateTokens();
+        //res.status(201).send({ user, tocken});
+        res.status(201).send(user);
     } catch (e){
-        res.status(400).send(e)
+        res.status(400).send(e);
+    }
+})
+
+//Sign In
+router.post('/user/login', async (req, res) => {
+    try {
+        const user = await User.findByCredentials(req.body.email, req.body.password);
+        const tocken = await user.generateTokens();
+        res.send({ user, tocken});
+    } catch (e) {
+        console.log(e);
+        res.status(400).send();
     }
 })
 
 //Get Users
-router.get('/users', async (req, res) => {
+router.get('/users', auth, async (req, res) => {
     try{
-        const users = await User.find({})
-        res.send(users)
+        const users = await User.find({});
+        res.send(users);
     } catch(e){
-        res.status(500).send(e)
+        res.status(500).send(e);
     }
 })
 
+router.get('/users/me', auth, async (req, res) => {
+    res.send(req.user)
+})
+
+
 //Get User
 router.post('/user', async (req, res) => {
-    const _id = req.body.id
+    const _id = req.body.id;
     try {
-        const user = await User.findById(_id)
+        const user = await User.findById(_id);
         if(!user){
-            return res.status(404).send()
+            return res.status(404).send();
         }
-        res.send(user)
+        res.send(user);
     } catch (e) {
-        res.status(500).send(e)
+        res.status(500).send(e);
     }
 })
 
 //Update User
 router.post('/user-update', async (req, res) => {
-    const _id = req.body.id
-    const updates = Object.keys(req.body)
+    const _id = req.body.id;
+    const updates = Object.keys(req.body);
 
     try {
         const user = await User.findById(req.body.id);
@@ -67,29 +87,18 @@ router.post('/user-update', async (req, res) => {
 
 //Delete User
 router.post('/user-delete', async (req, res) => {
-    const _id = req.body.id
+    const _id = req.body.id;
     console.log(_id)
     try {
-        const user = await User.findByIdAndDelete(_id)
+        const user = await User.findByIdAndDelete(_id);
         if(!user){
-            return res.status(404).send()
+            return res.status(404).send();
         }
-        res.send(user)
+        res.send(user);
     } catch (e) {
-        res.status(500).send(e)
+        res.status(500).send(e);
     }
 })
 
-//login
-router.post('/user/login', async (req, res) => {
-    try {
-        const user = await User.findByCredentials(req.body.email, req.body.password)
-        res.send(user)
-    } catch (e) {
-        console.log(e)
-        res.status(400).send()
-    }
-})
-
-module.exports = router
+module.exports = router;
 
