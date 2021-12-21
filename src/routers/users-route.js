@@ -8,28 +8,64 @@ const auth = require('../middleware/auth');
 //Sign up
 router.post('/user', async (req, res) =>{
     const user = new User(req.body);
-    console.log(req.body.email);
     try {
+        const checkEmail = await User.find({ email: user.email });
+        if(checkEmail.length > 0){
+            return res.status(400).send({
+                'Error': 'This Email id is already used'
+            });
+        }
         await user.save();
-        const tocken = await user.generateTokens();
-        //res.status(201).send({ user, tocken});
-        res.status(201).send(user);
+        const token = await user.generateTokens();
+        res.status(201).send({ user, token});
     } catch (e){
         res.status(400).send(e);
     }
 })
 
-//Sign In
+//login
 router.post('/user/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
-        const tocken = await user.generateTokens();
-        res.send({ user, tocken});
+        const token = await user.generateTokens();
+        res.send({user, token});        
     } catch (e) {
-        console.log(e);
-        res.status(400).send();
+        res.status(400).send({
+            message: "Please enter the valid user name and password"
+        });
     }
 })
+
+//logout
+router.post('/user/logout', auth, async (req, res) => {
+    try {
+        req.user.tokens = req.user.tokens.filter(( token ) => {
+            return token.token !== req.token;
+        });
+        await req.user.save();
+
+        res.send();
+    } catch (e) {
+        res.status(500).send(e);
+    }
+})
+
+//logout from all sectoin
+router.post('/users/logoutAll', auth, async (req, res) => {
+    try {
+        req.user.tokens = [];
+        await req.user.save();
+        res.send();
+    } catch (e) {
+        res.status(500).send();
+    }
+})
+
+//Get Profile
+router.get('/user/me', auth, async (req, res) => {
+    res.send(req.user);
+})
+
 
 //Get Users
 router.get('/users', auth, async (req, res) => {
@@ -41,27 +77,8 @@ router.get('/users', auth, async (req, res) => {
     }
 })
 
-router.get('/users/me', auth, async (req, res) => {
-    res.send(req.user)
-})
-
-
-//Get User
-router.post('/user', async (req, res) => {
-    const _id = req.body.id;
-    try {
-        const user = await User.findById(_id);
-        if(!user){
-            return res.status(404).send();
-        }
-        res.send(user);
-    } catch (e) {
-        res.status(500).send(e);
-    }
-})
-
 //Update User
-router.post('/user-update', async (req, res) => {
+router.post('/user-update', auth, async (req, res) => {
     const _id = req.body.id;
     const updates = Object.keys(req.body);
 
@@ -86,11 +103,9 @@ router.post('/user-update', async (req, res) => {
 })
 
 //Delete User
-router.post('/user-delete', async (req, res) => {
-    const _id = req.body.id;
-    console.log(_id)
+router.delete('/user/me', auth, async (req, res) => {
     try {
-        const user = await User.findByIdAndDelete(_id);
+        const user = await User.findByIdAndDelete(req.user._id);
         if(!user){
             return res.status(404).send();
         }

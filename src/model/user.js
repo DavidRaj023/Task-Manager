@@ -50,6 +50,17 @@ userSchema.methods.generateTokens = async function () {
     return token;
 }
 
+//getPublicProfile
+userSchema.methods.toJSON = function () {
+    const user = this;
+    const userObject = user.toObject();
+
+    delete userObject.password
+    delete userObject.tokens
+    
+    return userObject;
+}
+
 userSchema.statics.findByCredentials = async (email, password) =>{
     const user = await User.findOne({email});
     if (!user){
@@ -70,10 +81,36 @@ userSchema.pre('save', async function (next) {
     const user = this;
     if(user.isModified('password')){
         user.password = await bcrypt.hash(user.password, 8);
-        console.log(user.password);
     }
     next();
 })
+
+//Delete user tasks when user is removed
+// userSchema.pre('remove', async function (next) {
+//     const user = this;
+//     await Task.deleteMany({ owner: user._id });
+//     next();
+// })
+
+
+//virtual
+// userSchema.virtual('tasks', {
+//     ref: 'Task',
+//     localField: '_id',
+//     foreignField: 'owner'
+// })
+
+//Method to JOSN
+// userSchema.methods.toJSON = function () {
+//     const user = this;
+//     const userObject = user.toObject();
+
+//     delete userObject.password;
+//     delete userObject.tokens;
+
+//     return userObject;
+// }
+
 
 const User = mongoose.model('User', userSchema);
 
