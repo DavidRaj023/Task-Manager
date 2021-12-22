@@ -2,6 +2,7 @@ const express = require('express');
 const User = require('../model/user');
 const router = new express.Router();
 const auth = require('../middleware/auth');
+const { sendWelcomeEmail, sendCancelationEmail } = require('../utill/emailService');
 
 // ..............USER..............
 
@@ -15,6 +16,7 @@ router.post('/user', async (req, res) =>{
                 'Error': 'This Email id is already used'
             });
         }
+        sendWelcomeEmail(user.email, user.name);
         await user.save();
         const token = await user.generateTokens();
         res.status(201).send({ user, token});
@@ -109,6 +111,7 @@ router.delete('/user/me', auth, async (req, res) => {
         if(!user){
             return res.status(404).send();
         }
+        sendCancelationEmail(req.user.email, req.user.name);
         res.send(user);
     } catch (e) {
         res.status(500).send(e);

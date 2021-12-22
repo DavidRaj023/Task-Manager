@@ -55,3 +55,18 @@ app.listen(port, () => {
 
 
 // myTockenFunction();
+
+const Task = require('./model/task')
+const User = require('./model/user')
+
+const main = async () => {
+    // const task = await Task.findById('5c2e505a3253e18a43e612e6')
+    // await task.populate('owner').execPopulate()
+    // console.log(task.owner)
+
+    const user = await User.findById('61c2dda9b3a9ebbcad1c7d27')
+    await user.populate('tasks')
+    console.log(user.tasks)
+}
+
+main()

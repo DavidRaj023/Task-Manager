@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Task = require('./task');
 
 const userSchema = mongoose.Schema({
     name: {
@@ -38,7 +39,12 @@ const userSchema = mongoose.Schema({
             type: String,
             required: true
         }
-    }]
+    }],
+    avatar: {
+        type: Buffer
+    }
+}, {
+    timestamps: true
 })
 
 userSchema.methods.generateTokens = async function () {
@@ -48,17 +54,6 @@ userSchema.methods.generateTokens = async function () {
     user.tokens = user.tokens.concat({token});
     await user.save();
     return token;
-}
-
-//getPublicProfile
-userSchema.methods.toJSON = function () {
-    const user = this;
-    const userObject = user.toObject();
-
-    delete userObject.password
-    delete userObject.tokens
-    
-    return userObject;
 }
 
 userSchema.statics.findByCredentials = async (email, password) =>{
@@ -86,30 +81,30 @@ userSchema.pre('save', async function (next) {
 })
 
 //Delete user tasks when user is removed
-// userSchema.pre('remove', async function (next) {
-//     const user = this;
-//     await Task.deleteMany({ owner: user._id });
-//     next();
-// })
+userSchema.pre('remove', async function (next) {
+    const user = this;
+    await Task.deleteMany({ owner: user._id });
+    next();
+})
 
 
 //virtual
-// userSchema.virtual('tasks', {
-//     ref: 'Task',
-//     localField: '_id',
-//     foreignField: 'owner'
-// })
+userSchema.virtual('tasks', {
+    ref: 'Task',
+    localField: '_id',
+    foreignField: 'owner'
+})
 
-//Method to JOSN
-// userSchema.methods.toJSON = function () {
-//     const user = this;
-//     const userObject = user.toObject();
+//Method to 
+userSchema.methods.toJSON = function () {
+    const user = this;
+    const userObject = user.toObject();
 
-//     delete userObject.password;
-//     delete userObject.tokens;
+    delete userObject.password;
+    delete userObject.tokens;
 
-//     return userObject;
-// }
+    return userObject;
+}
 
 
 const User = mongoose.model('User', userSchema);
