@@ -3,6 +3,7 @@ const User = require('../model/user');
 const router = new express.Router();
 const auth = require('../middleware/auth');
 const { sendWelcomeEmail, sendCancelationEmail } = require('../utill/emailService');
+const multer = require('multer');
 
 // ..............USER..............
 
@@ -66,6 +67,53 @@ router.post('/users/logoutAll', auth, async (req, res) => {
 //Get Profile
 router.get('/user/me', auth, async (req, res) => {
     res.send(req.user);
+})
+
+const upload = multer({
+    limits: {
+        // 1Mb = 1000000
+        fileSize: 1000000
+    },
+    fileFilter(req, file, cb) {
+        if (!file.originalname.endsWith('.png')) {
+            return cb(new Error('Please upload a png file'));
+        }
+
+        cb(undefined, true)
+    }
+
+})
+//add profile
+router.post('/user/me/profile', auth, upload.single('profile'), async (req, res) => {
+    req.user.profile = req.file.buffer;
+    await req.user.save();
+    res.send();
+}, (error, req, res, next) => {
+    res.status(400).send({ error: error.message })
+})
+
+//delete profile
+router.delete('/user/me/profile', auth, async (req, res) => {
+    req.user.profile = undefined
+    await req.user.save()
+    res.send()
+})
+
+// get profile
+//in browser http://localhost:3000/user/61c473c3777faa1f0a147d6f/profile
+router.get('/user/:id/profile', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+
+        if (!user || !user.profile) {
+            throw new Error();
+        }
+
+        res.set('Content-Type', 'image/png');
+        res.send(user.profile);
+    } catch (e) {
+        res.status(404).send();
+    }
 })
 
 

@@ -40,7 +40,7 @@ const userSchema = mongoose.Schema({
             required: true
         }
     }],
-    avatar: {
+    profile: {
         type: Buffer
     }
 }, {
